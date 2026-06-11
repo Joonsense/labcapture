@@ -1,0 +1,19 @@
+.build/
+dist/
+.DS_Store
+*.xcodeproj
+.swiftpm/
+.env
+
+# 캡처 결과물 절대 커밋 금지 (얼굴/화면 프라이버시)
+*.gif
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
+
+# 서명/키 자료
+*.p12
+*.pem
+*.key
