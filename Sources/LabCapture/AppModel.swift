@@ -156,7 +156,7 @@ final class AppModel: ObservableObject {
             // 사전 알림 → 리드타임 대기
             let lead = Settings.preNotifyLead
             if Settings.preNotify && lead > 0 {
-                Notifier.show("캡처 \(lead)초 전", body: "LabCapture가 곧 화면과 웹캠을 녹화합니다.")
+                Notifier.show("Capturing in \(lead)s", body: "LabCapture is about to record the screen and webcam.")
                 try? await Task.sleep(nanoseconds: UInt64(lead) * 1_000_000_000)
             }
             do {
@@ -184,7 +184,7 @@ final class AppModel: ObservableObject {
     private func reportCaptureError(_ msg: String) {
         lastError = msg
         appendErrorLog(msg)
-        Notifier.show("캡처 실패", body: msg.components(separatedBy: "\n").first ?? msg)
+        Notifier.show("Capture failed", body: msg.components(separatedBy: "\n").first ?? msg)
     }
 
     // MARK: - 민감정보 폐기 정책
@@ -196,20 +196,20 @@ final class AppModel: ObservableObject {
     private func handleSensitiveDiscard(kinds: [String], trigger: Trigger) {
         ocrDiscardStreak += 1
         let detected = kinds.joined(separator: ", ")
-        appendErrorLog("민감정보 폐기 (\(ocrDiscardStreak)/\(Self.maxOcrDiscards)): \(detected)")
+        appendErrorLog("Sensitive info discarded (\(ocrDiscardStreak)/\(Self.maxOcrDiscards)): \(detected)")
 
         if ocrDiscardStreak >= Self.maxOcrDiscards {
             // 화면에 민감정보가 계속 떠 있는 상태 — N시간 캡처 중단
             let hours = Settings.ocrPauseHours
             ocrDiscardStreak = 0
             pause(for: TimeInterval(hours * 3600))
-            Notifier.show("민감정보 \(Self.maxOcrDiscards)회 연속 감지 — \(hours)시간 캡처 중단",
-                          body: "감지: \(detected). 화면에서 민감정보를 치우면 메뉴에서 '재개'로 바로 풀 수 있습니다.")
+            Notifier.show("Sensitive info detected \(Self.maxOcrDiscards)× in a row — pausing capture for \(hours)h",
+                          body: "Detected: \(detected). Clear the sensitive info from your screen, then release it instantly via 'Resume' in the menu.")
             return
         }
 
-        Notifier.show("민감정보 감지 — 캡처 폐기 후 즉시 재캡처 (\(ocrDiscardStreak)/\(Self.maxOcrDiscards))",
-                      body: "감지: \(detected)")
+        Notifier.show("Sensitive info detected — capture discarded, recapturing now (\(ocrDiscardStreak)/\(Self.maxOcrDiscards))",
+                      body: "Detected: \(detected)")
         // 폐기 완료 직후 즉시 재캡처 (사전 알림 없이 한 번만 재시도)
         Task { @MainActor in
             self.capturing = false
@@ -256,20 +256,20 @@ final class AppModel: ObservableObject {
 
     var statusLine: String {
         switch status {
-        case .capturing: return "캡처 중…"
-        case .warning: return "경고 — 마지막 캡처 실패"
+        case .capturing: return "Capturing…"
+        case .warning: return "Warning — last capture failed"
         case .paused:
             if let until = pausedUntil, until > Date() {
                 let f = DateFormatter(); f.dateFormat = "HH:mm"
-                return "일시정지 — \(f.string(from: until))까지"
+                return "Paused — until \(f.string(from: until))"
             }
-            return "일시정지 — 스케줄"
+            return "Paused — scheduled"
         case .active:
             if let next = nextFireAt {
                 let f = DateFormatter(); f.dateFormat = "HH:mm"
-                return "활성 — 다음 캡처 \(f.string(from: next))"
+                return "Active — next capture \(f.string(from: next))"
             }
-            return "활성"
+            return "Active"
         }
     }
 
@@ -347,11 +347,11 @@ final class AppModel: ObservableObject {
 
     func copyLastCapture() {
         guard let url = lastComboURL else {
-            Notifier.show("복사할 캡처가 없습니다", body: "먼저 캡처를 실행하세요.")
+            Notifier.show("No capture to copy", body: "Run a capture first.")
             return
         }
         if DailyPipeline.copyToClipboard(url: url) {
-            Notifier.show("클립보드에 복사됨", body: "X 작성창에 ⌘V로 바로 붙일 수 있습니다.")
+            Notifier.show("Copied to clipboard", body: "Paste it straight into an X post with ⌘V.")
         }
     }
 
@@ -365,7 +365,7 @@ final class AppModel: ObservableObject {
         Task {
             do {
                 let out = try await DailyPipeline.buildTimelapse()
-                Notifier.show("타임랩스 완성", body: out.lastPathComponent)
+                Notifier.show("Timelapse ready", body: out.lastPathComponent)
                 NSWorkspace.shared.activateFileViewerSelecting([out])
             } catch {
                 self.reportCaptureError(error.localizedDescription)
@@ -380,7 +380,7 @@ final class AppModel: ObservableObject {
         Task {
             do {
                 let out = try await DailyPipeline.buildSummary()
-                Notifier.show("오늘 빌딩 일지 완성", body: out.lastPathComponent)
+                Notifier.show("Today's build journal is ready", body: out.lastPathComponent)
                 NSWorkspace.shared.open(out)
             } catch {
                 self.reportCaptureError(error.localizedDescription)
@@ -555,7 +555,7 @@ final class AppModel: ObservableObject {
         let view = OnboardingView().environmentObject(self)
         let hosting = NSHostingController(rootView: view)
         let w = NSWindow(contentViewController: hosting)
-        w.title = "LabCapture 시작하기"
+        w.title = "Get Started with LabCapture"
         w.styleMask = [.titled, .closable]
         w.isReleasedWhenClosed = false
         w.center()
@@ -573,9 +573,9 @@ final class AppModel: ObservableObject {
     private func showFFmpegAlert() {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "ffmpeg가 설치되어 있지 않습니다"
-        alert.informativeText = "LabCapture는 ffmpeg로 화면을 녹화합니다.\n터미널에서 아래 명령을 실행한 뒤 앱을 다시 시작하세요.\n\nbrew install ffmpeg"
-        alert.addButton(withTitle: "확인")
+        alert.messageText = "ffmpeg is not installed"
+        alert.informativeText = "LabCapture records the screen with ffmpeg.\nRun the command below in Terminal, then restart the app.\n\nbrew install ffmpeg"
+        alert.addButton(withTitle: "OK")
         alert.runModal()
     }
 }

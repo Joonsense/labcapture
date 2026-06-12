@@ -57,7 +57,7 @@ final class TriggerServer {
             l.start(queue: queue)
             listener = l
         } catch {
-            NSLog("LabCapture: 트리거 서버 시작 실패 (포트 \(Self.port)): \(error)")
+            NSLog("LabCapture: trigger server failed to start (port \(Self.port)): \(error)")
         }
     }
 

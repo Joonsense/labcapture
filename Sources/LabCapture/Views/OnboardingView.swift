@@ -15,45 +15,45 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("LabCapture 권한 설정")
+            Text("LabCapture Permissions")
                 .font(.title2.bold())
-            Text("캡처가 동작하려면 아래 항목이 모두 허용되어야 합니다.\n허용 후 자동으로 체크 표시가 갱신됩니다.")
+            Text("All of the items below must be granted for capture to work.\nCheckmarks update automatically once granted.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
-            row(ok: ffmpegOK, title: "ffmpeg 설치",
-                detail: "터미널에서 brew install ffmpeg",
+            row(ok: ffmpegOK, title: "Install ffmpeg",
+                detail: "Run brew install ffmpeg in Terminal",
                 action: nil, actionTitle: nil)
 
-            row(ok: screenOK, title: "화면 기록 (Screen Recording)",
-                detail: "시스템 설정 → 개인정보 보호 → 화면 기록에서 LabCapture 허용",
+            row(ok: screenOK, title: "Screen Recording",
+                detail: "Allow LabCapture in System Settings → Privacy & Security → Screen Recording",
                 action: {
                     Permissions.requestScreen()
                     Permissions.openScreenSettings()
-                }, actionTitle: "설정 열기")
+                }, actionTitle: "Open Settings")
 
-            row(ok: cameraOK, title: "카메라 (Camera)",
-                detail: "웹캠(얼굴) 캡처에 필요 — 웹캠 사용 OFF면 건너뛰어도 됩니다",
+            row(ok: cameraOK, title: "Camera",
+                detail: "Needed for webcam (face) capture — skip it if webcam is off",
                 action: {
                     Permissions.requestCamera { ok in cameraOK = ok }
                     Permissions.openCameraSettings()
-                }, actionTitle: "설정 열기")
+                }, actionTitle: "Open Settings")
 
-            row(ok: notifOK, title: "알림 (Notifications)",
-                detail: "사전 알림(캡처 N초 전)에 필요",
+            row(ok: notifOK, title: "Notifications",
+                detail: "Needed for pre-capture notifications (N seconds before capture)",
                 action: {
                     Notifier.requestAuthorization()
                     Permissions.openNotificationSettings()
-                }, actionTitle: "설정 열기")
+                }, actionTitle: "Open Settings")
 
             Divider()
 
             HStack {
-                Text("권한 변경 후 앱 재시작이 필요할 수 있습니다.")
+                Text("A restart may be required after changing permissions.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("완료") {
+                Button("Done") {
                     onboardingDone = true
                     NSApp.keyWindow?.close()
                 }

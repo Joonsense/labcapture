@@ -29,97 +29,97 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("캡처") {
-                Stepper("캡처 주기: \(intervalMinutes)분", value: $intervalMinutes, in: 5...120, step: 5)
-                Stepper("캡처 길이: \(durationSeconds)초", value: $durationSeconds, in: 1...5)
-                Toggle("사전 알림 사용", isOn: $preNotify)
+            Section("Capture") {
+                Stepper("Capture interval: \(intervalMinutes) min", value: $intervalMinutes, in: 5...120, step: 5)
+                Stepper("Capture length: \(durationSeconds) sec", value: $durationSeconds, in: 1...5)
+                Toggle("Pre-capture notification", isOn: $preNotify)
                 if preNotify {
-                    Stepper("사전 알림 리드타임: \(preNotifyLead)초", value: $preNotifyLead, in: 0...10)
+                    Stepper("Notification lead time: \(preNotifyLead) sec", value: $preNotifyLead, in: 0...10)
                 }
             }
 
-            Section("웹캠") {
-                Toggle("웹캠 캡처 사용", isOn: $webcamEnabled)
-                    .help("끄면 screen.gif만 생성됩니다")
+            Section("Webcam") {
+                Toggle("Enable webcam capture", isOn: $webcamEnabled)
+                    .help("When off, only screen.gif is generated")
                 if webcamEnabled {
-                    Picker("PiP 위치", selection: $pipPosition) {
-                        Text("좌상단").tag("tl")
-                        Text("우상단").tag("tr")
-                        Text("좌하단").tag("bl")
-                        Text("우하단").tag("br")
+                    Picker("PiP position", selection: $pipPosition) {
+                        Text("Top left").tag("tl")
+                        Text("Top right").tag("tr")
+                        Text("Bottom left").tag("bl")
+                        Text("Bottom right").tag("br")
                     }
                 }
             }
 
             Section("GIF") {
                 Stepper("fps: \(gifFps)", value: $gifFps, in: 8...15)
-                Stepper("화면 GIF 가로폭: \(screenGifWidth)px", value: $screenGifWidth, in: 480...1080, step: 40)
+                Stepper("Screen GIF width: \(screenGifWidth)px", value: $screenGifWidth, in: 480...1080, step: 40)
             }
 
-            Section("민감정보 가드 (OCR)") {
-                Toggle("화면에 API 키·토큰 보이면 캡처 폐기", isOn: $ocrGuard)
+            Section("Sensitive Info Guard (OCR)") {
+                Toggle("Discard capture if API keys/tokens are visible", isOn: $ocrGuard)
                 if ocrGuard {
-                    Stepper("연속 \(AppModel.maxOcrDiscards)회 폐기 시 중단: \(ocrPauseHours)시간",
+                    Stepper("Pause after \(AppModel.maxOcrDiscards) discards in a row: \(ocrPauseHours) hr",
                             value: $ocrPauseHours, in: 1...12)
-                    Text("폐기 후 즉시 재캡처합니다. \(AppModel.maxOcrDiscards)회 연속 감지되면 위 시간만큼 캡처를 중단하고 자동 재개합니다 (메뉴 '재개'로 즉시 해제 가능).")
+                    Text("Recaptures immediately after a discard. If detected \(AppModel.maxOcrDiscards) times in a row, capture pauses for the time above and resumes automatically (release instantly via 'Resume' in the menu).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("저장") {
+            Section("Storage") {
                 HStack {
-                    Text("출력 폴더")
+                    Text("Output folder")
                     Spacer()
                     Text(abbreviatedPath(outputDir))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Button("변경…") { chooseOutputDir() }
+                    Button("Change…") { chooseOutputDir() }
                 }
-                Toggle("원본 mp4 보존", isOn: $keepOriginals)
-                    .help("고화질 타임랩스의 재료입니다 — 끄면 타임랩스가 GIF 기반(저화질)으로 만들어집니다")
+                Toggle("Keep original mp4", isOn: $keepOriginals)
+                    .help("Source material for high-quality timelapse — when off, the timelapse is built from GIFs (low quality)")
             }
 
-            Section("일시정지 스케줄") {
-                Toggle("스케줄 사용", isOn: $pauseSchedule)
+            Section("Pause Schedule") {
+                Toggle("Enable schedule", isOn: $pauseSchedule)
                 if pauseSchedule {
-                    DatePicker("시작", selection: minuteBinding($pauseStartMin), displayedComponents: .hourAndMinute)
-                    DatePicker("종료", selection: minuteBinding($pauseEndMin), displayedComponents: .hourAndMinute)
-                    Text("이 시간 동안 타이머 캡처가 자동 일시정지됩니다 (수동 캡처는 가능)")
+                    DatePicker("Start", selection: minuteBinding($pauseStartMin), displayedComponents: .hourAndMinute)
+                    DatePicker("End", selection: minuteBinding($pauseEndMin), displayedComponents: .hourAndMinute)
+                    Text("Timer captures pause automatically during this window (manual capture still works)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("전역 단축키") {
+            Section("Global Shortcut") {
                 HStack {
-                    Text("지금 캡처")
+                    Text("Capture Now")
                     Spacer()
                     Button(recordingHotkey
-                           ? "키를 누르세요…"
+                           ? "Press a key…"
                            : HotkeyManager.displayString(keyCode: hotkeyKeyCode, carbonModifiers: hotkeyModifiers)) {
                         toggleHotkeyRecording()
                     }
                 }
             }
 
-            Section("캡처 장치") {
+            Section("Capture Devices") {
                 if model.detectedDevices.isEmpty {
-                    Text("장치 미탐지 — 화면 기록 권한 허용 후 재탐지하세요")
+                    Text("No devices detected — grant Screen Recording permission, then re-detect")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(model.detectedDevices, id: \.index) { dev in
                         HStack {
                             Text("[\(dev.index)] \(dev.name)")
                             Spacer()
-                            if dev.index == screenDeviceIndex { Text("화면").foregroundStyle(.secondary) }
-                            if dev.index == camDeviceIndex { Text("웹캠").foregroundStyle(.secondary) }
+                            if dev.index == screenDeviceIndex { Text("Screen").foregroundStyle(.secondary) }
+                            if dev.index == camDeviceIndex { Text("Webcam").foregroundStyle(.secondary) }
                         }
                         .font(.caption)
                     }
                 }
-                Button("장치 재탐지") { model.redetectDevices() }
+                Button("Re-detect Devices") { model.redetectDevices() }
             }
         }
         .formStyle(.grouped)

@@ -75,7 +75,7 @@ enum DailyPipeline {
             let r = await FFmpeg.run(args, timeout: 120)
             guard r.ok else {
                 throw NSError(domain: "LabCapture", code: 2,
-                              userInfo: [NSLocalizedDescriptionKey: "타임랩스 세그먼트 인코딩 실패 (\(name)):\n\(r.tail)"])
+                              userInfo: [NSLocalizedDescriptionKey: "Timelapse segment encoding failed (\(name)):\n\(r.tail)"])
             }
             segs.append(seg)
         }
@@ -91,7 +91,7 @@ enum DailyPipeline {
         ], timeout: 120)
         guard r.ok else {
             throw NSError(domain: "LabCapture", code: 2,
-                          userInfo: [NSLocalizedDescriptionKey: "타임랩스 concat 실패:\n\(r.tail)"])
+                          userInfo: [NSLocalizedDescriptionKey: "Timelapse concat failed:\n\(r.tail)"])
         }
         return out
     }
@@ -113,7 +113,7 @@ enum DailyPipeline {
         let gifs = entries.filter { $0.hasSuffix("_screen.gif") }.sorted()
         guard !gifs.isEmpty else {
             throw NSError(domain: "LabCapture", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "오늘 캡처된 원본 mp4/screen.gif가 없습니다."])
+                          userInfo: [NSLocalizedDescriptionKey: "No original mp4/screen.gif captured today."])
         }
         let listPath = "/tmp/labcap_timelapse_list.txt"
         let list = gifs.map { "file '\(dir.appendingPathComponent($0).path.replacingOccurrences(of: "'", with: "'\\''"))'" }
@@ -129,7 +129,7 @@ enum DailyPipeline {
         ], timeout: 300)
         guard r.ok else {
             throw NSError(domain: "LabCapture", code: 2,
-                          userInfo: [NSLocalizedDescriptionKey: "타임랩스 인코딩 실패:\n\(r.tail)"])
+                          userInfo: [NSLocalizedDescriptionKey: "Timelapse encoding failed:\n\(r.tail)"])
         }
         return out
     }
@@ -155,13 +155,13 @@ enum DailyPipeline {
     static func buildSummary(for date: Date = Date()) async throws -> URL {
         guard let key = apiKey else {
             throw NSError(domain: "LabCapture", code: 3, userInfo: [NSLocalizedDescriptionKey:
-                "Anthropic API 키가 없습니다. 터미널에서:\nmkdir -p ~/.config/labcapture && printf '%s' 'sk-ant-...' > ~/.config/labcapture/anthropic_api_key && chmod 600 ~/.config/labcapture/anthropic_api_key"])
+                "No Anthropic API key found. In Terminal:\nmkdir -p ~/.config/labcapture && printf '%s' 'sk-ant-...' > ~/.config/labcapture/anthropic_api_key && chmod 600 ~/.config/labcapture/anthropic_api_key"])
         }
         let dir = CaptureEngine.dateDir(for: date)
         let manifestPath = dir.appendingPathComponent("manifest.jsonl")
         guard let manifest = try? String(contentsOf: manifestPath, encoding: .utf8), !manifest.isEmpty else {
             throw NSError(domain: "LabCapture", code: 4,
-                          userInfo: [NSLocalizedDescriptionKey: "오늘 manifest.jsonl이 없습니다."])
+                          userInfo: [NSLocalizedDescriptionKey: "No manifest.jsonl for today."])
         }
 
         // combo.gif에서 최대 6장의 대표 프레임 추출 (시간순 균등 샘플) → base64 PNG
@@ -182,26 +182,26 @@ enum DailyPipeline {
                 "source": ["type": "base64", "media_type": "image/png",
                            "data": data.base64EncodedString()],
             ])
-            imageBlocks.append(["type": "text", "text": "↑ \(name) (캡처 시각은 좌하단 타임스탬프)"])
+            imageBlocks.append(["type": "text", "text": "↑ \(name) (capture time is the timestamp in the bottom-left corner)"])
             try? fm.removeItem(atPath: png)
         }
 
         let dayFmt = DateFormatter(); dayFmt.dateFormat = "yyyy-MM-dd"
         let prompt = """
-        너는 1인 창업자의 빌딩 작업 일지를 쓰는 어시스턴트다.
-        아래는 오늘(\(dayFmt.string(from: date))) 자동 캡처 시스템(LabCapture)의 manifest.jsonl과 \
-        대표 화면 캡처들이다. 화면 이미지에서 어떤 작업(코딩/문서/터미널/브라우저 등)을 하고 있었는지 읽어내라.
+        You are an assistant that writes a solo founder's building work journal.
+        Below is today's (\(dayFmt.string(from: date))) manifest.jsonl from the automatic capture system (LabCapture) and \
+        representative screen captures. Read the screen images to figure out what work (coding/docs/terminal/browser, etc.) was being done.
 
-        manifest.jsonl (캡처 1건당 1줄, ts=시각, trigger=발동 방식):
+        manifest.jsonl (one line per capture, ts=time, trigger=how it fired):
         ```
         \(manifest)
         ```
 
-        한국어로, 결론 먼저, 마크다운으로 작성:
-        1. **오늘 한 줄 요약**
-        2. **타임라인** — 시간대별로 무엇을 작업했는지 (캡처 시각 기반)
-        3. **콘텐츠 소재 추천** — X(트위터)에 올릴 만한 순간 1~2개와 추천 문구 초안
-        과장하지 말고 이미지에서 실제로 보이는 것만 근거로 써라.
+        Write in English, conclusion first, in Markdown:
+        1. **One-line summary of today**
+        2. **Timeline** — what was worked on by time of day (based on capture times)
+        3. **Content ideas** — 1-2 moments worth posting on X (Twitter) plus a draft caption
+        Don't exaggerate — base everything only on what's actually visible in the images.
         """
 
         var content: [[String: Any]] = imageBlocks
@@ -225,20 +225,20 @@ enum DailyPipeline {
         guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
             let errText = String(data: data, encoding: .utf8) ?? ""
             throw NSError(domain: "LabCapture", code: 5,
-                          userInfo: [NSLocalizedDescriptionKey: "Claude API 오류 (\((resp as? HTTPURLResponse)?.statusCode ?? -1)):\n\(errText.prefix(300))"])
+                          userInfo: [NSLocalizedDescriptionKey: "Claude API error (\((resp as? HTTPURLResponse)?.statusCode ?? -1)):\n\(errText.prefix(300))"])
         }
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let blocks = json["content"] as? [[String: Any]] else {
             throw NSError(domain: "LabCapture", code: 6,
-                          userInfo: [NSLocalizedDescriptionKey: "응답 파싱 실패"])
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to parse response"])
         }
         let text = blocks.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }
             .joined(separator: "\n")
         guard !text.isEmpty else {
             let stop = json["stop_reason"] as? String ?? "unknown"
             throw NSError(domain: "LabCapture", code: 7,
-                          userInfo: [NSLocalizedDescriptionKey: "빈 응답 (stop_reason=\(stop))"])
+                          userInfo: [NSLocalizedDescriptionKey: "Empty response (stop_reason=\(stop))"])
         }
 
         let out = dir.appendingPathComponent("summary.md")

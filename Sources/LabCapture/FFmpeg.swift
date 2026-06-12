@@ -64,7 +64,7 @@ enum FFmpeg {
 
             do { try p.run() } catch {
                 timeoutWork.cancel()
-                cont.resume(returning: FFResult(code: -1, stderr: "ffmpeg 실행 실패: \(error.localizedDescription)"))
+                cont.resume(returning: FFResult(code: -1, stderr: "ffmpeg failed to launch: \(error.localizedDescription)"))
             }
         }
     }

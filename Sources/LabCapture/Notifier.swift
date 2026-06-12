@@ -11,7 +11,7 @@ enum Notifier {
     }
 
     static func show(_ title: String, body: String = "") {
-        guard available else { NSLog("LabCapture 알림: \(title) \(body)"); return }
+        guard available else { NSLog("LabCapture notification: \(title) \(body)"); return }
         let content = UNMutableNotificationContent()
         content.title = title
         if !body.isEmpty { content.body = body }

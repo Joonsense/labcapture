@@ -18,14 +18,14 @@ enum CaptureError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .ffmpegMissing: return "ffmpeg가 없습니다. 터미널에서 `brew install ffmpeg` 실행 후 다시 시도하세요."
-        case .lowDiskSpace: return "디스크 여유 공간이 500MB 미만이라 캡처를 건너뜁니다."
-        case .noScreenDevice: return "화면 캡처 장치를 찾지 못했습니다. 화면 기록 권한을 확인하세요."
-        case .noCamDevice: return "웹캠 장치를 찾지 못했습니다. 카메라 권한을 확인하세요."
-        case .allSourcesOff: return "화면과 얼굴 소스가 모두 꺼져 있어 캡처할 것이 없습니다."
-        case .sensitiveContent(let kinds): return "민감정보 감지로 캡처 폐기: \(kinds.joined(separator: ", "))"
-        case .recordFailed(let s): return "녹화 실패:\n\(s)"
-        case .convertFailed(let s): return "GIF 변환 실패:\n\(s)"
+        case .ffmpegMissing: return "ffmpeg not found. Run `brew install ffmpeg` in Terminal, then try again."
+        case .lowDiskSpace: return "Less than 500MB of free disk space — skipping capture."
+        case .noScreenDevice: return "No screen capture device found. Check Screen Recording permission."
+        case .noCamDevice: return "No webcam device found. Check Camera permission."
+        case .allSourcesOff: return "Both screen and face sources are off — nothing to capture."
+        case .sensitiveContent(let kinds): return "Capture discarded due to detected sensitive info: \(kinds.joined(separator: ", "))"
+        case .recordFailed(let s): return "Recording failed:\n\(s)"
+        case .convertFailed(let s): return "GIF conversion failed:\n\(s)"
         }
     }
 }
@@ -84,7 +84,7 @@ enum CaptureEngine {
         if useScreen {
             guard sRes!.ok, fileOK(tmpScreen) else {
                 cleanupTmp()
-                throw CaptureError.recordFailed("화면 녹화 (장치 \(screenIdx))\n\(sRes!.tail)")
+                throw CaptureError.recordFailed("Screen recording (device \(screenIdx))\n\(sRes!.tail)")
             }
         }
         if useCam, !(fRes?.ok ?? false) || !fileOK(tmpFace) {
@@ -93,7 +93,7 @@ enum CaptureEngine {
             fRes = await FFmpeg.run(retryArgs, timeout: recTimeout)
             guard fRes!.ok, fileOK(tmpFace) else {
                 cleanupTmp()
-                throw CaptureError.recordFailed("웹캠 녹화 (장치 \(camIdx))\n\(fRes!.tail)")
+                throw CaptureError.recordFailed("Webcam recording (device \(camIdx))\n\(fRes!.tail)")
             }
         }
 
@@ -160,7 +160,7 @@ enum CaptureEngine {
             // 5MB 초과 시 720px로 자동 다운스케일 재인코딩
             if fileSize(comboGif.path) > 5_000_000, screenW > 720 {
                 let r4 = await FFmpeg.run(comboArgs(width: 720, fps: fps, out: comboGif.path), timeout: 180)
-                guard r4.ok else { cleanupTmp(); throw CaptureError.convertFailed("combo.gif 720px 재인코딩\n\(r4.tail)") }
+                guard r4.ok else { cleanupTmp(); throw CaptureError.convertFailed("combo.gif 720px re-encode\n\(r4.tail)") }
             }
             files.append(comboGif.lastPathComponent)
             comboURL = comboGif
